@@ -1,0 +1,9 @@
+tensorflow
+pandas
+scikit-learn
+keras
+regex
+nltk
+numpy
+scipy
+os
