@@ -6,4 +6,3 @@ regex
 nltk
 numpy
 scipy
-os
