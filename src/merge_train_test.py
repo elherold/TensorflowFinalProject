@@ -39,7 +39,7 @@ def create_balanced_sets(name, input_data, original_zeros):
 
 def add_augmented_data(input, name, original_zeros, X_train, y_train):
     """
-    Augment the training data with additional balanced data.
+    Augment the training data with additional balanced data. Test
 
     Parameters:
     input (list): New data to be added.
