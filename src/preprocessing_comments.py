@@ -2,8 +2,6 @@ import pandas as pd
 import re
 import nltk
 from nltk.corpus import stopwords
-import numpy as np
-import random
 import os
 
 
@@ -82,11 +80,17 @@ def main():
 
     # Save to CSV files
     # Check if the csv files already exist
-    if not os.path.exists('data/zero_targets.csv'):
-        pd.DataFrame(zero_targets, columns=['target', 'comment_text']).to_csv('data/zero_targets.csv', index=False)
+    if not os.path.exists('../data/zero_targets.csv'):
+        pd.DataFrame(zero_targets, columns=['target', 'comment_text']).to_csv('../data/zero_targets.csv', index=False)
+        print("zero_targets.csv saved")
+    else: 
+        print("zero_targets.csv already exists")
 
-    if not os.path.exists('data/nonzero_targets.csv'):
-        pd.DataFrame(nonzero_targets, columns=['target', 'comment_text']).to_csv('data/nonzero_targets.csv', index=False)
+    if not os.path.exists('../data/nonzero_targets.csv'):
+        pd.DataFrame(nonzero_targets, columns=['target', 'comment_text']).to_csv('../data/nonzero_targets.csv', index=False)
+        print("nonzero_targets.csv saved")
+    else:
+        print("nonzero_targets.csv already exists")
 
 
 if __name__ == '__main__':
