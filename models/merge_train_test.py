@@ -7,10 +7,6 @@ from sklearn.model_selection import train_test_split
 import pandas as pd
 import random
 
-print("hello world")
-tokenizer = Tokenizer()
-print(type(tokenizer))
-
 def is_nan(x):
     return isinstance(x, float) 
 
@@ -144,7 +140,7 @@ def tokenizer_padding(X_train, y_train, X_test, y_test):
     # Same for y_test if it's not already a numpy array
     y_test_array = np.array(y_test)
     
-    return X_train_padded, y_train_array, X_test_padded, y_test_array
+    return X_train_padded, y_train_array, X_test_padded, y_test_array, max_sequence_length, tokenizer.word_index
 
 
 def getting_datasets():
@@ -173,10 +169,10 @@ def getting_datasets():
     # Process each training set
     for name, (X_train, y_train) in train_sets.items():
         # Tokenize and pad the training and testing sequences
-        X_train_padded, y_train_array, X_test_padded, y_test_array = tokenizer_padding(X_train, y_train, X_test, y_test)
+        X_train_padded, y_train_array, X_test_padded, y_test_array, max_lenght, word_index = tokenizer_padding(X_train, y_train, X_test, y_test)
         
         # Add the datasets to the dictionary
         datasets[name] = [X_train_padded, y_train_array, X_test_padded, y_test_array]
 
     print("Data processing completed.")
-    return datasets
+    return datasets, max_lenght, word_index
