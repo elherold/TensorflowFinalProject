@@ -1,4 +1,5 @@
 
+
 from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 import numpy as np
@@ -6,6 +7,9 @@ from sklearn.model_selection import train_test_split
 import pandas as pd
 import random
 
+print("hello world")
+tokenizer = Tokenizer()
+print(type(tokenizer))
 
 def is_nan(x):
     return isinstance(x, float) 
