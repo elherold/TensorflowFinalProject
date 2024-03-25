@@ -10,7 +10,7 @@ dataset, max_sequence_len, tokenizer = getting_datasets()
 # Counterfactual fairness test
 
 # load the model
-model = tf.keras.models.load_model('../models/model_originaldata')
+model = tf.keras.models.load_model('../models/model_synonymsmiddle_data')
 max_sequence_len = 1250
 
 # Gender axis
