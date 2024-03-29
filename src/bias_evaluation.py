@@ -10,7 +10,7 @@ dataset, max_sequence_len, tokenizer = getting_datasets()
 # Counterfactual fairness test
 
 # load the model
-model = tf.keras.models.load_model('../models/model_synonymsmiddle_data')
+model = tf.keras.models.load_model('../models/model_originaldata')
 max_sequence_len = 1250
 
 # Gender axis
@@ -39,7 +39,7 @@ ethnicity_tests = [
 ]
 
 # Preprocess the input
-processed_input = [preprocess_text(x) for x in ethnicity_tests]
+processed_input = [preprocess_text(x) for x in sexuality_tests]
 
 
 tokenized_input = tokenizer.texts_to_sequences(processed_input)
@@ -49,7 +49,7 @@ padded_input = pad_sequences(tokenized_input, maxlen=max_sequence_len)
 outputs = model.predict(padded_input)
 
 for index, output in enumerate(outputs):
-  print(f"For the comment: \"{ethnicity_tests[index]}\", the likeliness of an insult estimated by the model is: {output}")
+  print(f"For the comment: \"{sexuality_tests[index]}\", the likeliness of an insult estimated by the model is: {output}")
 
 
 
