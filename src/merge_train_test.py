@@ -6,6 +6,8 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 import pandas as pd
 import random
+import json
+from preprocessing_comments import preprocess_text
 
 def is_nan(x):
     return isinstance(x, float) 
@@ -122,6 +124,31 @@ def tokenizer_padding(X_train, y_train, X_test, y_test):
 
     The padding is done based on the maximum sequence length found in either the training or testing sets.
     """
+    # I have a dict saved as a json file, I want to apply my preprocessing function to the values of its keys and then tokenize and pad the sequences 
+
+
+    # Load the dictionary from the json file
+    with open('../data/test_predictions.json', 'r') as file:
+        predictions_dict = json.load(file)
+
+    # Apply your preprocessing function to the values of the dictionary
+    preprocessed_dict = {}
+    for key, value in predictions_dict.items():
+        preprocessed_value = preprocess_text(value)
+        preprocessed_dict[key] = preprocessed_value
+
+    # Convert the preprocessed values to sequences
+    sequences = tokenizer.texts_to_sequences(list(preprocessed_dict.values()))
+
+    # Pad the sequences
+    padded_sequences = pad_sequences(sequences, maxlen=500)
+
+    # Convert the dictionary keys to a list
+    keys = list(preprocessed_dict.keys())
+
+    # Create a new dictionary with the preprocessed and padded sequences
+    predictions_dict = {keys[i]: padded_sequences[i] for i in range(len(keys))}
+
     # tokenize sentences
     tokenizer = Tokenizer()
     tokenizer.fit_on_texts(X_train) # fit only training data
@@ -130,10 +157,10 @@ def tokenizer_padding(X_train, y_train, X_test, y_test):
     test_sequence = tokenizer.texts_to_sequences(X_test)
 
     # Pad the sequences
-    max_sequence_length = max(max(len(x) for x in train_sequence), max(len(x) for x in test_sequence))
-    print(f"Max sequence length is: {max_sequence_length}.")
-    X_train_padded = pad_sequences(train_sequence, maxlen=max_sequence_length)
-    X_test_padded = pad_sequences(test_sequence, maxlen=max_sequence_length)
+    #max_sequence_length = max(max(len(x) for x in train_sequence), max(len(x) for x in test_sequence))
+    #print(f"Max sequence length is: {max_sequence_length}.")
+    X_train_padded = pad_sequences(train_sequence, maxlen=500)
+    X_test_padded = pad_sequences(test_sequence, maxlen=500)
 
     # Convert y_train to a numpy array
     y_train_array = np.array(y_train)
@@ -141,15 +168,14 @@ def tokenizer_padding(X_train, y_train, X_test, y_test):
     # Same for y_test if it's not already a numpy array
     y_test_array = np.array(y_test)
     
-    return X_train_padded, y_train_array, X_test_padded, y_test_array, max_sequence_length, tokenizer
+    return X_train_padded, y_train_array, X_test_padded, y_test_array, predictions_dict
 
 
 def getting_datasets():
 
     # Define input DataFrames
     input_dfs = {
-        "nonzero_synonyms_first": list(zip(pd.read_csv('../data/synonyms_firsts.csv')['Target'], pd.read_csv('../data/synonyms_firsts.csv')['AugmentedSentence'])),
-        "nonzero_synonyms_middle": list(zip(pd.read_csv('../data/synonyms_middle.csv')['Target'], pd.read_csv('../data/synonyms_middle.csv')['AugmentedSentence']))
+        "augmented_synonyms": list(zip(pd.read_csv('../data/synonyms.csv')['Target'], pd.read_csv('../data/synonyms.csv')['AugmentedSentence'])),
     }
 
     # Read original nonzeros
@@ -170,10 +196,10 @@ def getting_datasets():
     # Process each training set
     for name, (X_train, y_train) in train_sets.items():
         # Tokenize and pad the training and testing sequences
-        X_train_padded, y_train_array, X_test_padded, y_test_array, max_lenght, tokenizer = tokenizer_padding(X_train, y_train, X_test, y_test)
+        X_train_padded, y_train_array, X_test_padded, y_test_array, predictions_dict = tokenizer_padding(X_train, y_train, X_test, y_test)
         
         # Add the datasets to the dictionary
         datasets[name] = [X_train_padded, y_train_array, X_test_padded, y_test_array]
 
     print("Data processing completed.")
-    return datasets, max_lenght, tokenizer
+    return datasets, predictions_dict

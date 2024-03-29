@@ -1,7 +1,5 @@
 import pandas as pd
 import re
-import nltk
-from nltk.corpus import stopwords
 import os
 
 
@@ -18,7 +16,6 @@ def remove_tags(text):
     TAG_RE = re.compile(r'<[^>]+>')
     return TAG_RE.sub('', text)
 
-print("Loading data...Test")
 
 def preprocess_text(input_text):
     """
@@ -40,9 +37,6 @@ def preprocess_text(input_text):
     # Remove single characters and multiple spaces
     input_text = re.sub(r'\s+[a-zA-Z]\s', ' ', input_text)
     input_text = re.sub(r'\s+', ' ', input_text)
-    # Remove stopwords
-    pattern = re.compile(r'\b(' + r'|'.join(stopwords.words('english')) + r')\b\s*')
-    input_text = pattern.sub('', input_text)
     return input_text.strip()
 
 def main():
@@ -51,14 +45,14 @@ def main():
     creates lists of zero and nonzero targets, and saves them to CSV files.
     """
     # Load the dataset
-    filepath = 'data/train.csv'
+    filepath = '../data/train.csv'
     data = pd.read_csv(filepath)
 
     texts = data['comment_text'].astype(str)
     targets = data[['toxic', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity_hate']].values
 
     # Download stopwords
-    nltk.download('stopwords')
+    #nltk.download('stopwords')
 
     # Preprocess texts
     X = [preprocess_text(s) for s in texts]
