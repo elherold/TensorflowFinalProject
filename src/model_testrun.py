@@ -22,19 +22,26 @@ def create_embedding_matrix(word_index, embedding_dim=100):
     embeddings_index = {}
     with open('../data/glove.6B.100d.txt', encoding='utf-8') as f:
         # Fill up the embedding matrix dictionary with the natural language words as keys and their respective vector representations as values
+        print(type(word_index))
+        l = 0
         for line in f:
+            l += 1
+            if l % 1000 == 0:
+                print(f"Processed {l} lines")
             values = line.split()
             word = values[0]
             coefs = np.asarray(values[1:], dtype='float32')
             embeddings_index[word] = coefs
     
     # Prepare embedding matrix
-            embedding_matrix = np.zeros((len(word_index) + 1, embedding_dim))
-            for word, i in word_index.items():
-                embedding_vector = embeddings_index.get(word)
-                if embedding_vector is not None:
-                    # Words not found in the embedding index will be all-zeros.
-                    embedding_matrix[i] = embedding_vector
+    embedding_matrix = np.zeros((len(word_index) + 1, embedding_dim))
+    for word, i in word_index.items():
+        if i % 1000 == 0:
+            print(f"Processed {i} words")
+        embedding_vector = embeddings_index.get(word)
+        if embedding_vector is not None:
+            # Words not found in the embedding index will be all-zeros.
+            embedding_matrix[i] = embedding_vector
 
     return embedding_matrix
 
@@ -94,4 +101,3 @@ for name, (X_train, y_train) in train_sets.items():
 
     # Save the embedding matrix
     np.save(f'../models/embedding_matrix_{name}.npy', embedding_matrix)
-
