@@ -46,6 +46,7 @@ def main():
     """
     # Load the dataset
     filepath = '../data/train.csv'
+    filepath = '../data/backtranslation_augmented.csv'
     data = pd.read_csv(filepath)
 
     texts = data['comment_text'].astype(str)
@@ -62,29 +63,37 @@ def main():
     nonzero_targets = []
 
     paired_data = list(zip(targets, X))
+    print(f"length of paired_data: {len(paired_data)}")
+    print(f"Head of paired data: {paired_data[:5]}")
 
-    for target, sentence in paired_data:
+    for idx, (target, sentence) in enumerate(paired_data):
         if all(x == 0 for x in target):
             zero_targets.append((0, sentence))
         else:
             nonzero_targets.append((1, sentence))
-        if len(paired_data) % 4 == 0:
-            print(f"Processed {len(zero_targets) + len(nonzero_targets)} datapoints")
+        # Now using idx to check every 4 iterations
+        if idx % 4 == 0:
+            print(f"Processed {idx} datapoints")
 
 
     # Save to CSV files
     # Check if the csv files already exist
-    if not os.path.exists('../data/zero_targets.csv'):
-        pd.DataFrame(zero_targets, columns=['target', 'comment_text']).to_csv('../data/zero_targets.csv', index=False)
-        print("zero_targets.csv saved")
-    else: 
-        print("zero_targets.csv already exists")
+            
+    filepath_one = '../data/zero_targets.csv'
+    #filepath_two = '../data/nonzero_targets.csv'
+    filepath_two = '../data/backtranslation.csv'
 
-    if not os.path.exists('../data/nonzero_targets.csv'):
-        pd.DataFrame(nonzero_targets, columns=['target', 'comment_text']).to_csv('../data/nonzero_targets.csv', index=False)
-        print("nonzero_targets.csv saved")
+    if not os.path.exists(filepath_one):
+        pd.DataFrame(zero_targets, columns=['target', 'comment_text']).to_csv(filepath_one, index=False)
+        print(f"File saved at {filepath_one}")
+    else: 
+        print(f"File already exists at {filepath_one}")
+
+    if not os.path.exists(filepath_two):
+        pd.DataFrame(nonzero_targets, columns=['target', 'comment_text']).to_csv(filepath_two, index=False)
+        print(f"File saved at {filepath_two}")
     else:
-        print("nonzero_targets.csv already exists")
+        print(f"File already exists at {filepath_two}")
 
 
 if __name__ == '__main__':
