@@ -2,10 +2,14 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Embedding, LSTM, Dropout, Dense
 from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
+from tensorflow.keras.callbacks import TensorBoard
 import pandas as pd
 import numpy as np
 import json
+import pickle
 from merge_train_test import getting_datasets
+import os
+from datetime import datetime
 
 def create_embedding_matrix(word_index, embedding_dim=100):
     """
@@ -66,14 +70,29 @@ def tokenizer_padding(X_train, X_test):
     embedding_matrix = create_embedding_matrix(word_index)
     print("Tokenization completed")
 
-    return X_train_padded, X_test_padded, word_index, embedding_matrix
+    return X_train_padded, X_test_padded, tokenizer, word_index, embedding_matrix
 
 train_sets, X_test, y_test = getting_datasets()
 
 for name, (X_train, y_train) in train_sets.items():
     # Tokenize and pad the training and testing sequences
-    X_train_padded, X_test_padded, word_index, embedding_matrix = tokenizer_padding(X_train, X_test)
+    X_train = list(X_train)
+
+    # This needs to be removed eventually, just skipping it for testing purposes
+    if name=="original_data":
+        continue
+        
+    X_train_padded, X_test_padded, tokenizer, word_index, embedding_matrix = tokenizer_padding(X_train, X_test)
+
+    y_train = np.array(y_train, dtype=np.int32)
+    y_test = np.array(y_test, dtype=np.int32)
+
     print(f"Currently training model {name}")
+    print("X_train_padded:", X_train_padded.shape, X_train_padded.dtype)
+    print("y_train:", y_train.shape, y_train.dtype)
+    print("X_test_padded:", X_test_padded.shape, X_test_padded.dtype)
+    print("y_test:", y_test.shape, y_test.dtype)
+
     
     # Create the model
     model = Sequential()
@@ -85,19 +104,27 @@ for name, (X_train, y_train) in train_sets.items():
     # Compile the model
     model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
+    # TensorBoard setup
+    log_dir = os.path.join("logs", name, datetime.now().strftime("%Y%m%d-%H%M%S"))
+    tensorboard_callback = TensorBoard(log_dir=log_dir, histogram_freq=1)
+
     # Train the model
-    history = model.fit(X_train_padded, y_train, validation_data=(X_test_padded, y_test), epochs=5, batch_size=64)
+    history = model.fit(X_train_padded, y_train, validation_data=(X_test_padded, y_test), epochs=3, batch_size=64)
 
     # Evaluate the model
     loss, accuracy = model.evaluate(X_test_padded, y_test)
     print(f"Model {name} - Loss: {loss}, Accuracy: {accuracy}")
 
-    # Save the model
-    model.save(f'../models/model_{name}')
+    # After training, save the tokenizer and word_index
+    with open(f'../models/tokenizer_{name}.pickle', 'wb') as handle:
+        pickle.dump(tokenizer, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-    # Save the word index
     with open(f'../models/word_index_{name}.json', 'w') as f:
         json.dump(word_index, f)
 
     # Save the embedding matrix
     np.save(f'../models/embedding_matrix_{name}.npy', embedding_matrix)
+
+    # Save the model
+    model.save(f'../models/model_{name}')
+
