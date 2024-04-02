@@ -1,117 +1,143 @@
-
-# create the model
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Embedding, LSTM, Dropout, Dense
 from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
+from tensorflow.keras.callbacks import TensorBoard
 import pandas as pd
-from merge_train_test import getting_datasets
-import gensim.downloader as api
-from preprocessing_comments import preprocess_text
-import json 
 import numpy as np
+import json
+import pickle
+from merge_train_test import getting_datasets
+import os
+from datetime import datetime
 
-embedding_ap = api.load("glove-wiki-gigaword-100")
 
-def tokenizer_padding(X_train, y_train, X_test, y_test):
+def create_embedding_matrix(word_index, embedding_dim=100):
     """
-    Tokenizes and pads the training and testing text sequences, and converts labels to numpy arrays.
-
-    This function takes the training and testing text data (X_train, X_test), tokenizes these texts into sequences 
-    of integers, and then pads these sequences to ensure that they have the same length. Additionally, it converts 
-    the label lists (y_train, y_test) into numpy arrays for use in machine learning models.
+    Creates an embedding matrix for the Embedding Layer from the GloVe embeddings.
 
     Parameters:
-    X_train (list of str): The list of training sentences.
-    y_train (list): The list of training labels.
-    X_test (list of str): The list of testing sentences.
-    y_test (list): The list of testing labels.
+    word_index(dict): A dictionary mapping words to their index in the Tokenizer. 
+    embedding_dimension (int): The dimension of the embedding layer.
 
-    Returns:
-    tuple: Returns four elements:
-        - X_train_padded (numpy.ndarray): Padded sequences for the training set.
-        - y_train_array (numpy.ndarray): Array of training labels.
-        - X_test_padded (numpy.ndarray): Padded sequences for the testing set.
-        - y_test_array (numpy.ndarray): Array of testing labels.
-
-    The padding is done based on the maximum sequence length found in either the training or testing sets.
+    Returns: test change
+    numpy.ndarray: An embedding matrix where the ith row gives the embedding of the word with index i.
     """
-    # I have a dict saved as a json file, I want to apply my preprocessing function to the values of its keys and then tokenize and pad the sequences 
+    # Load the GloVe embeddings
+    embeddings_index = {}
+    with open('../data/glove.6B.100d.txt', encoding='utf-8') as f:
+        # Fill up the embedding matrix dictionary with the natural language words as keys and their respective vector representations as values
+        print(type(word_index))
+        l = 0
+        for line in f:
+            l += 1
+            if l % 1000 == 0:
+                print(f"Processed {l} lines")
+            values = line.split()
+            word = values[0]
+            coefs = np.asarray(values[1:], dtype='float32')
+            embeddings_index[word] = coefs
+    
+    # Prepare embedding matrix
+    embedding_matrix = np.zeros((len(word_index) + 1, embedding_dim))
+    for word, i in word_index.items():
+        if i % 1000 == 0:
+            print(f"Processed {i} words")
+        embedding_vector = embeddings_index.get(word)
+        if embedding_vector is not None:
+            # Words not found in the embedding index will be all-zeros.
+            embedding_matrix[i] = embedding_vector
 
+    return embedding_matrix
 
-    # Load the dictionary from the json file
-    with open('../data/test_predictions.json', 'r') as file:
-        predictions_dict = json.load(file)
-
-    # Apply your preprocessing function to the values of the dictionary
-    preprocessed_dict = {}
-    for key, value in predictions_dict.items():
-        preprocessed_value = preprocess_text(value)
-        preprocessed_dict[key] = preprocessed_value
-
-    # Convert the preprocessed values to sequences
-    sequences = tokenizer.texts_to_sequences(list(preprocessed_dict.values()))
-
-    # Pad the sequences
-    padded_sequences = pad_sequences(sequences, maxlen=500)
-
-    # Convert the dictionary keys to a list
-    keys = list(preprocessed_dict.keys())
-
-    # Create a new dictionary with the preprocessed and padded sequences
-    predictions_dict = {keys[i]: padded_sequences[i] for i in range(len(keys))}
-
-    # tokenize sentences
+def tokenizer_padding(X_train, X_test, name, max_length=[500]):
+    """
+    Tokenizes and pads the training and testing text sequences.
+    """
+    # Initialize the Tokenizer
     tokenizer = Tokenizer()
-    tokenizer.fit_on_texts(X_train) # fit only training data
+    tokenizer.fit_on_texts(X_train + X_test) # Combine to ensure tokenizer covers both sets of words
 
+    print(f"type of X-training: {type(X_train)}")
+    print(f"type of X-testing: {type(X_test)}")
+    # Tokenize and pad the sequences
     train_sequence = tokenizer.texts_to_sequences(X_train)
     test_sequence = tokenizer.texts_to_sequences(X_test)
+    # Pad the sequences with specified max length
+    X_train_padded = [pad_sequences(train_sequence, maxlen=length) for length in max_length]
+    X_test_padded = [pad_sequences(test_sequence, maxlen=length) for length in max_length]
 
-    # Pad the sequences
-    #max_sequence_length = max(max(len(x) for x in train_sequence), max(len(x) for x in test_sequence))
-    #print(f"Max sequence length is: {max_sequence_length}.")
-    X_train_padded = pad_sequences(train_sequence, maxlen=500)
-    X_test_padded = pad_sequences(test_sequence, maxlen=500)
+    # Prepare the embedding matrix
+    word_index = tokenizer.word_index
+    try:
+        embedding_matrix = np.load(f'../models/embedding_matrix_{name}.npy')
+    except:
+        embedding_matrix = create_embedding_matrix(word_index)
+    print("Tokenization completed")
 
-    # Convert y_train to a numpy array
-    y_train_array = np.array(y_train)
+    return X_train_padded, X_test_padded, tokenizer, word_index, embedding_matrix
 
-    # Same for y_test if it's not already a numpy array
-    y_test_array = np.array(y_test)
-    
-    return X_train_padded, y_train_array, X_test_padded, y_test_array, predictions_dict
+def train_models():
+    """
+    function to train the models.
+    """
+    # Get the training and testing sets
+    train_sets, X_test, y_test = getting_datasets()
 
-train_sets, x_test, y_test = getting_datasets()
+    # train a distinct model with each training set
+    for name, (X_train, y_train) in train_sets.items():
+        # Tokenize and pad the training and testing sequences
+        X_train = list(X_train)
 
-dict_datasets = {}
-# Process each training set
-for name, (X_train, y_train) in train_sets.items():
-    # Tokenize and pad the training and testing sequences
-    X_train_padded, y_train_array, X_test_padded, y_test_array, predictions_dict = tokenizer_padding(X_train, y_train, X_test, y_test)
-    
-    # Add the datasets to the dictionary
-    dict_datasets[name] = [X_train_padded, y_train_array, X_test_padded, y_test_array]
+        # This needs to be removed eventually, just skipping it for testing purposes
+        # if name=="original_data" or name=="augmented_synonyms":
+        #     continue
+            
+        X_train_padded, X_test_padded, tokenizer, word_index, embedding_matrix = tokenizer_padding(X_train, X_test, name)
 
+        y_train = np.array(y_train, dtype=np.int32)
+        y_test = np.array(y_test, dtype=np.int32)
 
-for key, value in dict_datasets.items():
-    print(f"Key: {key}, Value: {value}")
+        print(f"Currently training model {name}")
+        print("X_train_padded:", X_train_padded[0].shape, X_train_padded[0].dtype)
+        print("y_train:", y_train.shape, y_train.dtype)
+        print("X_test_padded:", X_test_padded[0].shape, X_test_padded[0].dtype)
+        print("y_test:", y_test.shape, y_test.dtype)
 
-    X_train, X_test, y_train, y_test = value
+        
+        # Create the model
+        model = Sequential()
+        model.add(Embedding(input_dim=len(word_index) + 1, output_dim=100, input_length=500, weights=[embedding_matrix], trainable=False)) # set trainable to False to keep the embeddings fixed
+        model.add(LSTM(100))
+        model.add(Dropout(0.2))
+        model.add(Dense(1, activation='sigmoid'))
 
-    model = Sequential()
-    model.add(Embedding(input_dim=len(word_index) + 1, output_dim=100, input_length=500))
-    model.add(LSTM(units=50))
-    model.add(Dropout(0.2))  # Dropout zur Reduzierung von Overfitting
-    model.add(Dense(1, activation='sigmoid'))
+        # Compile the model
+        model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
-    model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+        # TensorBoard setup
+        log_dir = os.path.join("logs", name, datetime.now().strftime("%Y%m%d-%H%M%S"))
+        tensorboard_callback = TensorBoard(log_dir=log_dir, histogram_freq=1)
 
-    history = model.fit(X_train, y_train, epochs=4, batch_size=32, validation_data=(X_test, y_test))
-    history_dict = history.history
-    history_df = pd.DataFrame(history.history)
-    history_df.to_csv(f'../models/{key}_history.csv')
-    model.save('../models/{key}_model')
-    print(model.summary())
+        # Train the model
+        history = model.fit(X_train_padded[0], y_train, validation_data=(X_test_padded[0], y_test), epochs=3, batch_size=64)
 
+        # Evaluate the model
+        loss, accuracy = model.evaluate(X_test_padded[0], y_test)
+        print(f"Model {name} - Loss: {loss}, Accuracy: {accuracy}")
 
+        # After training, save the tokenizer and word_index
+        with open(f'../models/tokenizer_{name}.pickle', 'wb') as handle:
+            pickle.dump(tokenizer, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+        with open(f'../models/word_index_{name}.json', 'w') as f:
+            json.dump(word_index, f)
+
+        # Save the embedding matrix
+        np.save(f'../models/embedding_matrix_{name}.npy', embedding_matrix)
+
+        # Save the model
+        #model.save(f'../models/model_{name}')
+
+if __name__ == "__main__":
+    train_models()
