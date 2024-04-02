@@ -137,7 +137,7 @@ def train_models():
         np.save(f'../models/embedding_matrix_{name}.npy', embedding_matrix)
 
         # Save the model
-        #model.save(f'../models/model_{name}')
+        model.save(f'../models/model_{name}')
 
 if __name__ == "__main__":
     train_models()
