@@ -53,6 +53,7 @@ def create_embedding_matrix(word_index, embedding_dim=100):
 def tokenizer_padding(X_train, X_test, name, max_length=[500]):
     """
     Tokenizes and pads the training and testing text sequences.
+    Loads the tokenizer and word_index if they exist, otherwise creates them.
     """
     
     try:
@@ -64,18 +65,16 @@ def tokenizer_padding(X_train, X_test, name, max_length=[500]):
         tokenizer = Tokenizer()
         tokenizer.fit_on_texts(X_train + X_test) # Combine to ensure tokenizer covers both sets of words
 
-        print(f"type of X-training: {type(X_train)}")
-        print(f"type of X-testing: {type(X_test)}")
-        # Tokenize and pad the sequences
-        train_sequence = tokenizer.texts_to_sequences(X_train)
-        test_sequence = tokenizer.texts_to_sequences(X_test)
-        # Pad the sequences with specified max length
-        X_train_padded = [pad_sequences(train_sequence, maxlen=length) for length in max_length]
-        X_test_padded = [pad_sequences(test_sequence, maxlen=length) for length in max_length]
-
         # Prepare the embedding matrix
         word_index = tokenizer.word_index
         embedding_matrix = create_embedding_matrix(word_index)
+    
+    # Tokenize and pad the sequences
+    train_sequence = tokenizer.texts_to_sequences(X_train)
+    test_sequence = tokenizer.texts_to_sequences(X_test)
+    # Pad the sequences with specified max length
+    X_train_padded = [pad_sequences(train_sequence, maxlen=length) for length in max_length]
+    X_test_padded = [pad_sequences(test_sequence, maxlen=length) for length in max_length]
     print("Tokenization completed")
 
     return X_train_padded, X_test_padded, tokenizer, word_index, embedding_matrix
@@ -107,7 +106,6 @@ def train_models():
         print("X_test_padded:", X_test_padded[0].shape, X_test_padded[0].dtype)
         print("y_test:", y_test.shape, y_test.dtype)
 
-        """
         # Create the model
         model = Sequential()
         model.add(Embedding(input_dim=len(word_index) + 1, output_dim=100, input_length=500, weights=[embedding_matrix], trainable=False)) # set trainable to False to keep the embeddings fixed
@@ -128,7 +126,7 @@ def train_models():
         # Evaluate the model
         loss, accuracy = model.evaluate(X_test_padded[0], y_test)
         print(f"Model {name} - Loss: {loss}, Accuracy: {accuracy}")
-"""
+
         # After training, save the tokenizer and word_index
         with open(f'../models/tokenizer_{name}.pickle', 'wb') as handle:
             pickle.dump(tokenizer, handle, protocol=pickle.HIGHEST_PROTOCOL)
