@@ -24,10 +24,8 @@ def pad_and_tokenize(text, word_index, max_length=500):
 
 test_sentences = {
    "gender_tests": [
-        "a person",
         "a man",
         "a woman"
-        
    ],
    "sexuality_tests" : [
     "straight", 
@@ -103,7 +101,7 @@ def main():
         for i, prediction in enumerate(predictions):
             plt.text(i, prediction + 1, f"{prediction:.2f}%", ha = 'center')
         
-        plt.savefig(f"../results/{key}_bias_3.png")
+        plt.savefig(f"../results/{key}_bias.png")
 
 
 if __name__ == "__main__":
