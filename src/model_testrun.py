@@ -53,13 +53,27 @@ def tokenizer_padding(X_train, X_test):
     """
     Tokenizes and pads the training and testing text sequences.
     """
+    # Initialize counters for numeric values
+    numeric_values_count_train = 0
+
+    # Filter out numeric values and count their occurrences
+    X_train_filtered = []
+    for i, x in enumerate(X_train):
+        if isinstance(x, str):
+            X_train_filtered.append(x)
+        else:
+            numeric_values_count_train += 1
+            
+    print(f"Number of NaN values in training set: {numeric_values_count_train}, it is at index {i}")
 
     # Initialize the Tokenizer
     tokenizer = Tokenizer()
-    tokenizer.fit_on_texts(X_train + X_test) # Combine to ensure tokenizer covers both sets of words
+    tokenizer.fit_on_texts(X_train_filtered + X_test) # Combine to ensure tokenizer covers both sets of words
 
+    print(f"type of X-training: {type(X_train_filtered)}")
+    print(f"type of X-testing: {type(X_test)}")
     # Tokenize and pad the sequences
-    train_sequence = tokenizer.texts_to_sequences(X_train)
+    train_sequence = tokenizer.texts_to_sequences(X_train_filtered)
     test_sequence = tokenizer.texts_to_sequences(X_test)
     max_length = 500 # Maximum sequence length we are using (this means some comments get cut off, as the longest comment is 1250 words)
     X_train_padded = pad_sequences(train_sequence, maxlen=max_length)
@@ -79,7 +93,7 @@ for name, (X_train, y_train) in train_sets.items():
     X_train = list(X_train)
 
     # This needs to be removed eventually, just skipping it for testing purposes
-    if name=="original_data":
+    if name=="original_data" or name=="augmented_synonyms":
         continue
         
     X_train_padded, X_test_padded, tokenizer, word_index, embedding_matrix = tokenizer_padding(X_train, X_test)

@@ -1,41 +1,46 @@
-import tensorflow as tf
-
-
-model = tf.keras.models.load_model('../models/model_synonymsfirst_data')
-
-# Extract the trained embeddings
-embeddings = model.layers[0].get_weights()[0]
-
-# Apply Orthogonal Subspace correction
-# STEP 0: Define the Concept SUbspaces: Identify vectors that represent your concepts of interest. e.g gender (v1) and occupation (v2)
-# STEP 1: Orthogonalization Process: like Gram-Schmidt orthogonolization to adjust the occupation subspace (vs) so that it becomes orthogonal to the gender subspace (v1).
-# This involves modifying v2 so that the dot product between v1 and the new v'2 is zero
-# STEP 2: Rotate all other datapoints (word embeddings ) towards this new orthogonal setup. Points close to v1 rotate less compared to points close to v2, which rotate to align with the new v2'
-# STEP 3: Preserve inherent associations - ensure that inherently related concepts like grandpa/mal retain their meaningful associations through this transformation process. 
 import numpy as np
+import json
 
-def define_subspaces(embeddings):
-    # Example: defining subspaces as mean of selected word embeddings
-    gender_words = ['he', 'his', 'him', 'she', 'her', 'hers', 'man', 'woman']
-    occupation_words = ['engineer', 'scientist', 'lawyer', 'banker', 'nurse', 'homemaker', 'maid', 'receptionist']
-    
-    v1 = np.mean([embeddings[word] for word in gender_words], axis=0)
-    v2 = np.mean([embeddings[word] for word in occupation_words], axis=0)
-    return v1, v2
+names = ["original_data", "augmented_synonyms"]
+names_wi = ["word_index_original_data", "word_index_augmented_synonyms"]
 
-def make_orthogonal(v1, v2):
-    # Adjust v2 to be orthogonal to v1
-    v2_prime = v2 - np.dot(v2, v1) / np.dot(v1, v1) * v1
-    return v2_prime
+# Load the embedding matrices and word indices
+embedding_matrix_paths = [f"../models/embedding_matrix_{name}.npy" for name in names]
+embedding_matrices = [np.load(path) for path in embedding_matrix_paths]
+word_index_paths = [f"../models/word_index_{name}.json" for name in names_wi]
+word_indices = [json.load(open(path)) for path in word_index_paths]
 
-def rotate_embeddings(embeddings, v1, v2_prime):
-    # Rotate embeddings to align with the new, orthogonal subspace
-    # This step is more complex and requires determining the rotation matrix
-    # that aligns v2 with v2_prime, and then applying this rotation to all embeddings.
-    pass
+# Defining the seed words for the different informative dimensions
+# Assuming word_index is a dictionary mapping words to their indices in the embedding matrix
+male_words = ['man', 'he']
+female_words = ['woman', 'she']
+seed_sets = {
+    'gender': [['man', "he", "his", "him", "boy"], ["woman", "she", "her", "girl"]],
+    'religion': [['christian', 'church', 'bible'], ['muslim', 'mosque', 'quran'], ['jewish', 'synagogue', 'torah']],
+    'ethnicity': [['white', 'caucasian'], ['black', 'african']],
+    'sexuality': [['gay', 'bisexual', 'lesbian', 'queer'], ['straight']]
+}
+def compute_aggregate_vector(words, embeddings):
+    vectors = [embeddings[word] for word in words if word in embeddings]
+    return np.mean(vectors, axis=0) if vectors else None
 
-def oscar_algorithm(embeddings):
-    v1, v2 = define_subspaces(embeddings)
-    v2_prime = make_orthogonal(v1, v2)
-    rotated_embeddings = rotate_embeddings(embeddings, v1, v2_prime)
-    return rotated_embeddings
+def compute_neutral_direction_for_axis(seed_word_sets, embedding_matrix):
+    aggregate_vectors = [compute_aggregate_vector(words, embedding_matrix) for words in seed_word_sets]
+    print(f"Aggregate vectors calculated: {aggregate_vectors}")
+    neutral_direction = np.mean(aggregate_vectors, axis=0)
+    print(f"Neutral direction calculated: {neutral_direction}")
+    return neutral_direction / np.linalg.norm(neutral_direction)
+
+def multi_axis_debiasing(embedding_matrix, seed_sets):
+    debiased_embedding_matrix = np.copy(embedding_matrix)  # Make a copy to avoid altering the original embeddings
+    for axis, seed_word_sets in seed_sets.items():
+        neutral_direction = compute_neutral_direction_for_axis(seed_word_sets, debiased_embedding_matrix)
+        for i, embedding in enumerate(debiased_embedding_matrix):
+            projection = np.dot(embedding, neutral_direction) * neutral_direction
+            debiased_embedding_matrix[i] -= projection
+    return debiased_embedding_matrix
+
+def main(embedding_matrices, word_indices, seed_sets):
+    for name, embedding_matrix in zip(names, embedding_matrices):
+        debiased_embedding_matrix = multi_axis_debiasing(embedding_matrix, seed_sets)
+        np.save(f"debiased_embedding_matrix_{name}.npy", debiased_embedding_matrix)
