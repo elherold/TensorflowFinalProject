@@ -11,6 +11,7 @@ from merge_train_test import getting_datasets
 import os
 from datetime import datetime
 
+
 def create_embedding_matrix(word_index, embedding_dim=100):
     """
     Creates an embedding matrix for the Embedding Layer from the GloVe embeddings.
@@ -19,7 +20,7 @@ def create_embedding_matrix(word_index, embedding_dim=100):
     word_index(dict): A dictionary mapping words to their index in the Tokenizer. 
     embedding_dimension (int): The dimension of the embedding layer.
 
-    Returns:
+    Returns: test change
     numpy.ndarray: An embedding matrix where the ith row gives the embedding of the word with index i.
     """
     # Load the GloVe embeddings
