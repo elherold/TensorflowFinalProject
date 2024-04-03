@@ -94,7 +94,7 @@ def train_models():
         X_train = list(X_train)
 
         # This needs to be removed eventually, just skipping it for testing purposes
-        if name=="original_data":
+        if name=="augmented_synonyms" or name=="augmented_backtranslation":
             continue
             
         X_train_padded, X_test_padded, tokenizer, word_index, embedding_matrix = tokenizer_padding(X_train, X_test, name)
@@ -113,7 +113,7 @@ def train_models():
             model = tf.keras.models.load_model(f'../models/model_{name}')
             print(f"Model {name} already exists, skipping training")
 
-        except FileNotFoundError:
+        except OSError:
             print(f"Model {name} does not exist, training and saving new model")
 
             # Create the model
