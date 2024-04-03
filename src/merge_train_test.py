@@ -105,6 +105,7 @@ def getting_datasets():
     input_dfs = {
         "augmented_synonyms": list(zip(pd.read_csv('../data/synonyms.csv')['Target'], pd.read_csv('../data/synonyms.csv')['AugmentedSentence'])),
         "augmented_backtranslation": list(zip(pd.read_csv('../data/backtranslation.csv')['target'], pd.read_csv('../data/backtranslation.csv')['comment_text'])),
+        "augmented_all_combined": list(zip(pd.read_csv('../data/all_augmented.csv')['Target'], pd.read_csv('../data/all_augmented.csv')['comment_text']))
     }
 
     # Read original nonzeros

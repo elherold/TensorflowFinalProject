@@ -94,7 +94,7 @@ def train_models():
         X_train = list(X_train)
 
         # This needs to be removed eventually, just skipping it for testing purposes
-        if name=="augmented_synonyms" or name=="augmented_backtranslation":
+        if name=="augmented_synonyms" or name=="augmented_backtranslation" or name=="original_data":
             continue
             
         X_train_padded, X_test_padded, tokenizer, word_index, embedding_matrix = tokenizer_padding(X_train, X_test, name)
