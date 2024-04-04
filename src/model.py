@@ -51,12 +51,12 @@ def train_models():
             # Create the model
             model = Sequential()
             model.add(Embedding(input_dim=len(word_index) + 1, output_dim=100, input_length=500, weights=[embedding_matrix], trainable=False)) # set trainable to False to keep the embeddings fixed
-            model.add(LSTM(100))
-            model.add(Dropout(0.2))
+            model.add(LSTM(112))
+            model.add(Dropout(0.3))
             model.add(Dense(1, activation='sigmoid'))
 
             # Compile the model
-            model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+            model.compile(loss='binary_crossentropy', optimizer=tf.keras.optimizers.Adam(learning_rate=0.001), metrics=['accuracy'])
 
             # TensorBoard setup
             log_dir = os.path.join("logs", name, datetime.now().strftime("%Y%m%d-%H%M%S"))
