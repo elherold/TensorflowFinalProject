@@ -101,7 +101,7 @@ def main():
         for i, prediction in enumerate(predictions):
             plt.text(i, prediction + 1, f"{prediction:.2f}%", ha = 'center')
         
-        plt.savefig(f"../results/{key}_bias.png")
+        plt.savefig(f"../results/original_{key}_bias.png")
 
 
 if __name__ == "__main__":
