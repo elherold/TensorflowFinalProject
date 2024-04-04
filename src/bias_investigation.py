@@ -25,12 +25,34 @@ print(f"Word indices of seed_set words: {[word_indices[0][word] for word in seed
 #print(f"Word embeddings of seed_set words: {[embedding_matrices[0][word_indices[0][word]] for word in seed_sets['gender'][0]]}")
 
 def compute_aggregate_vector(words, embeddings, word_index):
+    """
+    Calculate the average vector for a list of words.
+
+    Parameters:
+    - words (list of str): The words to compute the aggregate vector for.
+    - embeddings (numpy.ndarray): The embedding matrix where each row corresponds to a word vector.
+    - word_index (dict): A dictionary mapping words to their indices in the embedding matrix.
+
+    Returns:
+    - numpy.ndarray: The mean vector of the specified words if they exist in the word index, otherwise None.
+    """
     print(f"Words to compute aggregate vector for: {words}")
     vectors = [embeddings[word_index[word]] for word in words]
     print("vectors computed for words")
     return np.mean(vectors, axis=0) if vectors else None
 
 def compute_neutral_direction_for_axis(seed_word_sets, embedding_matrix, word_index):
+    """
+    Compute a neutral direction vector for a given axis based on seed word sets.
+
+    Parameters:
+    - seed_word_sets (list of list of str): A list of lists, where each inner list contains seed words defining a concept axis.
+    - embedding_matrix (numpy.ndarray): The embedding matrix for the model.
+    - word_index (dict): A dictionary mapping words to their indices in the embedding matrix.
+
+    Returns:
+    - numpy.ndarray: A normalized vector representing the neutral direction for the axis.
+    """
     aggregate_vectors = [compute_aggregate_vector(words, embedding_matrix, word_index) for words in seed_word_sets]
     print(f"Aggregate vectors calculated.")
     neutral_direction = np.mean(aggregate_vectors, axis=0)
@@ -38,6 +60,17 @@ def compute_neutral_direction_for_axis(seed_word_sets, embedding_matrix, word_in
     return neutral_direction / np.linalg.norm(neutral_direction)
 
 def multi_axis_debiasing(embedding_matrix, seed_sets, word_index):
+    """
+    Perform debiasing of the embedding matrix across multiple axes defined by seed word sets.
+
+    Parameters:
+    - embedding_matrix (numpy.ndarray): The original embedding matrix to be debiased.
+    - seed_sets (dict): A dictionary where keys are axis names (e.g., 'gender') and values are lists of seed word lists.
+    - word_index (dict): A dictionary mapping words to their indices in the embedding matrix.
+
+    Returns:
+    - numpy.ndarray: The debiased embedding matrix.
+    """
     debiased_embedding_matrix = np.copy(embedding_matrix)  # Make a copy to avoid altering the original embeddings
     for axis, seed_word_sets in seed_sets.items():
         print(f"Currently working on debiasing for axis {axis}.")
