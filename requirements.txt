@@ -3,6 +3,7 @@ tensorflow_hub
 pandas
 scikit-learn
 keras
+keras_tuner
 regex
 nltk
 numpy
