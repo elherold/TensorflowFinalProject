@@ -4,16 +4,12 @@ from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 import tensorflow as tf
 
-import pandas as pd
-
 import keras_tuner as kt
 import numpy as np
+import os
 
 from merge_train_test import getting_datasets
-from model_test import create_embedding_matrix, tokenizer_padding
-
-import os
-print("imports done")
+from preprocess_embedding_padding import create_embedding_matrix, tokenizer_padding
 
 word_index = None  # Initialize as None
 embedding_matrix = None  # Initialize as None
@@ -47,7 +43,7 @@ def model_builder(hp):
                 loss='binary_crossentropy', metrics=['accuracy'])
     return model
 
-def find_best_hyperparameters(DataSize=150000, InputLength=500, DataSubset='augmented_all_combined'):
+def find_best_hyperparameters(DataSize=150000, InputLength=200, DataSubset='augmented_all_combined'):
     # Get the training and testing sets
     train_sets, X_test, y_test = getting_datasets()
     DATA_SIZE = DataSize
@@ -85,7 +81,7 @@ def find_best_hyperparameters(DataSize=150000, InputLength=500, DataSubset='augm
         200: X_train_padded[1],
         500: X_train_padded[2]
     }
-    tuner = kt.Hyperband(model_builder, objective='val_accuracy', max_epochs=10, factor=3, directory=f'hp_tuner_datalen_{DATA_SIZE}_inputlen_{INPUT_LENGTH}', project_name='combined_data')
+    tuner = kt.Hyperband(model_builder, objective='val_accuracy', max_epochs=10, factor=3, directory=f'../models/tuner/hp_tuner_datalen_{DATA_SIZE}_inputlen_{INPUT_LENGTH}', project_name='combined_data')
 
     stop_early = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=3)
 
