@@ -10,7 +10,7 @@ import os
 from datetime import datetime
 
 from merge_train_test import getting_datasets
-from preprocess_embedding_padding import create_embedding_matrix, tokenizer_padding
+from embedding_padding import create_embedding_matrix, tokenizer_padding
 
 def train_models():
     """
@@ -57,12 +57,6 @@ def train_models():
         y_train = np.array(y_train, dtype=np.int32)
         y_test = np.array(y_test, dtype=np.int32)
 
-        #print(f"Currently training model {name}")
-        #print("X_train_padded:", X_train_padded[0].shape, X_train_padded[0].dtype)
-        #print("y_train:", y_train.shape, y_train.dtype)
-        #print("X_test_padded:", X_test_padded[0].shape, X_test_padded[0].dtype)
-        #print("y_test:", y_test.shape, y_test.dtype)
-        
 
         ############################################
         #           Load Files                     
