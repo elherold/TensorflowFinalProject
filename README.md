@@ -1,5 +1,5 @@
 # TensorflowFinalProject
-Mitigating Discriminating Bias in Hate-speech Classification
+Leveraging Alterations in Embedding Subspaces to Mitigate Bias in Detecting Harmful Speech using Long Short-Term Memory Models.
 
 
 ## File contents:
