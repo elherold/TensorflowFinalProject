@@ -9,7 +9,7 @@ import numpy as np
 import os
 
 from merge_train_test import getting_datasets
-from preprocess_embedding_padding import create_embedding_matrix, tokenizer_padding
+from src.embedding_padding import create_embedding_matrix, tokenizer_padding
 
 word_index = None  # Initialize as None
 embedding_matrix = None  # Initialize as None
