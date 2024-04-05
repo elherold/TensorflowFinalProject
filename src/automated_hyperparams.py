@@ -1,10 +1,8 @@
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Embedding, LSTM, Dropout, Dense
-from tensorflow.keras.preprocessing.text import Tokenizer
-from tensorflow.keras.preprocessing.sequence import pad_sequences
 import tensorflow as tf
-
 import keras_tuner as kt
+
 import numpy as np
 import os
 
