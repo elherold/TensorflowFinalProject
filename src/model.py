@@ -15,6 +15,13 @@ from preprocess_embedding_padding import create_embedding_matrix, tokenizer_padd
 def train_models():
     """
     function to train the models.
+    1. Get the training and testing sets
+    2. Train a distinct model with each training set
+    3. Load Files
+    4. Create the model
+    5. Train
+    6. Write Files
+    7. Evaluate the model
     Adjust Hyperparameters if you want, these were declared best by hyperparametertuning using hyperband 
     """
     # Tuned Hyperparameter
