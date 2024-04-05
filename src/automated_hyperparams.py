@@ -66,7 +66,7 @@ def find_best_hyperparameters(DataSize=150000, InputLength=200, DataSubset='augm
 
     global embedding_matrix  # Use the global keyword to modify the variable
 
-    X_train_padded, X_test_padded, tokenizer, word_index, embedding_matrix = tokenizer_padding(X_train, X_test, "original_data_short", [100, 200, 500])
+    X_train_padded, X_test_padded, tokenizer, word_index, embedding_matrix = tokenizer_padding(X_train, X_test, "augmented_all_combined", [100, 200, 500])
 
     print(X_train_padded[0].shape)
     print(X_train[0])

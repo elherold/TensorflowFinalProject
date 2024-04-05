@@ -15,7 +15,20 @@ from preprocess_embedding_padding import create_embedding_matrix, tokenizer_padd
 def train_models():
     """
     function to train the models.
+    Adjust Hyperparameters if you want, these were declared best by hyperparametertuning using hyperband 
     """
+    # Tuned Hyperparameter
+    LR = 0.001
+    LSTM_UNITS = 112 
+    DROPOUT = 0.3
+
+    # Manual Hyperparameter
+    FINAL = True # Train the final model on the combined data
+    EPOCHS = 20 # How many EPOCHS to train
+    START_EPOCH = 10 # Loading exisiting model of specific epoch
+    INPUT_LENGTH = 500 # Number of input tokens
+
+
     # Get the training and testing sets
     train_sets, X_test, y_test = getting_datasets()
 
@@ -28,8 +41,11 @@ def train_models():
         # This needs to be removed eventually, just skipping it for testing purposes
         if name=="augmented_synonyms" or name=="augmented_backtranslation" or name=="original_data":
             continue
+
+        if FINAL==True:
+            name="augmented_all_combined"
             
-        X_train_padded, X_test_padded, tokenizer, word_index, embedding_matrix = tokenizer_padding(X_train, X_test, name)
+        X_train_padded, X_test_padded, tokenizer, word_index, embedding_matrix = tokenizer_padding(X_train, X_test, name, max_length=[INPUT_LENGTH])
 
         y_train = np.array(y_train, dtype=np.int32)
         y_test = np.array(y_test, dtype=np.int32)
@@ -39,24 +55,60 @@ def train_models():
         #print("y_train:", y_train.shape, y_train.dtype)
         #print("X_test_padded:", X_test_padded[0].shape, X_test_padded[0].dtype)
         #print("y_test:", y_test.shape, y_test.dtype)
+        
+
+        ############################################
+        #           Load Files                     
+        #############################################
+
+        history_file = f'../models/history_{name}.json'
+        existing_history = {}
 
         # Load the model if it already exists
         try: 
-            model = tf.keras.models.load_model(f'../models/model_{name}')
-            print(f"Model {name} already exists, skipping training")
+            # To get files before and after epoch was added to the name
+            try:
+                model = tf.keras.models.load_model(f"../models/model_{name}")
+            else:
+                model = tf.keras.models.load_model(f"../models/model_{name}_epoch_{EPOCH}")
+            except OSError as e:
+                raise
+                
+            if EPOCHS == 0:
+                print(f"model_{name}_epoch_{EPOCH}' exists, just evaluating model, skipping training")
+            else:
+                print(f"model_{name}_epoch_{EPOCH}' exists, continue training model")
 
+            try:
+                with open(history_file, 'r') as f:
+                    existing_history = json.load(f)
+            else:
+                with open(os.path.join(history_file[:-5], f"_epoch_{EPOCH}.json"), "r") as f:
+                    existing_history = json.load(f)
+            except FileNotFoundError:
+                pass  # If the file doesn't exist, we'll create it later
         except OSError:
             print(f"Model {name} does not exist, training and saving new model")
+            START_EPOCH = 0
 
-            # Create the model
+            ####################
+            # Create the model 
+            ####################
             model = Sequential()
-            model.add(Embedding(input_dim=len(word_index) + 1, output_dim=100, input_length=500, weights=[embedding_matrix], trainable=False)) # set trainable to False to keep the embeddings fixed
-            model.add(LSTM(112))
-            model.add(Dropout(0.3))
+            model.add(Embedding(input_dim=len(word_index) + 1, output_dim=100, input_length=INPUT_LENGTH, weights=[embedding_matrix], trainable=False)) # set trainable to False to keep the embeddings fixed
+            model.add(LSTM(LSTM_UNITS))
+            model.add(Dropout(DROPOUT))
             model.add(Dense(1, activation='sigmoid'))
 
             # Compile the model
-            model.compile(loss='binary_crossentropy', optimizer=tf.keras.optimizers.Adam(learning_rate=0.001), metrics=['accuracy'])
+            model.compile(loss='binary_crossentropy', optimizer=tf.keras.optimizers.Adam(learning_rate=LR), metrics=['accuracy'])
+
+
+        
+        if EPOCHS > 0:
+            ########################
+            #       Train
+            ########################
 
             # TensorBoard setup
             log_dir = os.path.join("logs", name, datetime.now().strftime("%Y%m%d-%H%M%S"))
@@ -65,27 +117,45 @@ def train_models():
             # Train the model
             history = model.fit(X_train_padded, y_train, 
                                 validation_data=(X_test_padded, y_test), 
-                                epochs=3, batch_size=64, 
+                                epochs=EPOCHS, batch_size=64, 
                                 callbacks=[tensorboard_callback])
+            ########################
+            #       Write Files
+            ########################
 
-            # After training, save the tokenizer and word_index
-            with open(f'../models/tokenizer_{name}.pickle', 'wb') as handle:
-                pickle.dump(tokenizer, handle, protocol=pickle.HIGHEST_PROTOCOL)
+            if START_EPOCH == 0:
+                # After training, save the tokenizer and word_index
+                with open(f'../models/tokenizer_{name}.pickle', 'wb') as handle:
+                    pickle.dump(tokenizer, handle, protocol=pickle.HIGHEST_PROTOCOL)
+                
+                with open(f'../models/word_index_{name}.json', 'w') as f:
+                    json.dump(word_index, f)
+            
+            ########################
+            #       Write History 
+            ############:D##########
 
-            with open(f'../models/word_index_{name}.json', 'w') as f:
-                json.dump(word_index, f)
+            # Get the new history from the current training run
+            new_history = history.history
+
+            # Update existing history with new data for each key
+            for key in existing_history.keys():
+                existing_history[key].extend(new_history[key])
 
             # save the training history
-            with open(f'../models/history_{name}.json', 'w') as f:
-                json.dump(history.history, f)
+            with open(history_file, 'w') as f:
+                json.dump(existing_history, f)
 
             # Save the embedding matrix
             np.save(f'../models/embedding_matrix_{name}.npy', embedding_matrix)
 
             # Save the model
-            model.save(f'../models/model_{name}')
+            model.save(f'../models/model_{name}_epoch_{EPOCHS+START_EPOCH}')
         
+        ########################
         # Evaluate the model
+        ########################
+
         loss, accuracy = model.evaluate(X_test_padded, y_test)
         print(f"Model {name} - Loss: {loss}, Accuracy: {accuracy}")
 
