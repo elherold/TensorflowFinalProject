@@ -111,7 +111,7 @@ def train_models():
             ########################
 
             # TensorBoard setup
-            log_dir = os.path.join("logs", name, datetime.now().strftime("%Y%m%d-%H%M%S"))
+            log_dir = os.path.join("logs", name, f"epoch_{START_EPOCH+1}_{EPOCHS+START_EPOCH}_{datetime.now().strftime("%Y%m%d-%H%M%S")}")
             tensorboard_callback = TensorBoard(log_dir=log_dir, histogram_freq=1)
 
             # Train the model
