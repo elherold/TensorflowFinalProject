@@ -24,8 +24,8 @@ def train_models():
 
     # Manual Hyperparameter
     FINAL = True # Train the final model on the combined data
-    EPOCHS = 20 # How many EPOCHS to train
-    START_EPOCH = 10 # Loading exisiting model of specific epoch
+    EPOCHS = 0 # How many EPOCHS to train
+    START_EPOCH = 30 # Loading exisiting model of specific epoch
     INPUT_LENGTH = 500 # Number of input tokens
 
 
@@ -69,24 +69,26 @@ def train_models():
             # To get files before and after epoch was added to the name
             try:
                 model = tf.keras.models.load_model(f"../models/model_{name}")
-            else:
-                model = tf.keras.models.load_model(f"../models/model_{name}_epoch_{EPOCH}")
             except OSError as e:
-                raise
+                try:
+                    model = tf.keras.models.load_model(f"../models/model_{name}_epoch_{START_EPOCH}")
+                except OSError as e:
+                    raise
                 
             if EPOCHS == 0:
-                print(f"model_{name}_epoch_{EPOCH}' exists, just evaluating model, skipping training")
+                print(f"model_{name}_epoch_{START_EPOCH}' exists, just evaluating model, skipping training")
             else:
-                print(f"model_{name}_epoch_{EPOCH}' exists, continue training model")
+                print(f"model_{name}_epoch_{START_EPOCH}' exists, continue training model")
 
             try:
                 with open(history_file, 'r') as f:
                     existing_history = json.load(f)
-            else:
-                with open(os.path.join(history_file[:-5], f"_epoch_{EPOCH}.json"), "r") as f:
-                    existing_history = json.load(f)
             except FileNotFoundError:
-                pass  # If the file doesn't exist, we'll create it later
+                try:
+                    with open(os.path.join(history_file[:-5], f"_epoch_{EPOCH}.json"), "r") as f:
+                        existing_history = json.load(f)
+                except FileNotFoundError:
+                    pass  # If the file doesn't exist, we'll create it later
         except OSError:
             print(f"Model {name} does not exist, training and saving new model")
             START_EPOCH = 0
@@ -111,7 +113,8 @@ def train_models():
             ########################
 
             # TensorBoard setup
-            log_dir = os.path.join("logs", name, f"epoch_{START_EPOCH+1}_{EPOCHS+START_EPOCH}_{datetime.now().strftime("%Y%m%d-%H%M%S")}")
+            time_id = datetime.now().strftime("%Y%m%d-%H%M%S")
+            log_dir = os.path.join("logs", name, f"epoch_{START_EPOCH+1}_{EPOCHS+START_EPOCH}_{time_id}")
             tensorboard_callback = TensorBoard(log_dir=log_dir, histogram_freq=1)
 
             # Train the model
