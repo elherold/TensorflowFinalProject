@@ -26,13 +26,13 @@ def train_models():
     """
     # Tuned Hyperparameter
     LR = 0.001
-    LSTM_UNITS = 112 
-    DROPOUT = 0.3
+    LSTM_UNITS = 100
+    DROPOUT = 0.2
 
     # Manual Hyperparameter
     FINAL = True # Train the final model on the combined data
-    EPOCHS = 0 # How many EPOCHS to train
-    START_EPOCH = 30 # Loading exisiting model of specific epoch
+    EPOCHS = 3 # How many EPOCHS to train
+    START_EPOCH = 0 # Loading exisiting model of specific epoch
     INPUT_LENGTH = 500 # Number of input tokens
 
 
@@ -66,16 +66,18 @@ def train_models():
         existing_history = {}
 
         # Load the model if it already exists
-        try: 
+        try:
             # To get files before and after epoch was added to the name
             try:
                 model = tf.keras.models.load_model(f"../models/model_{name}")
             except OSError as e:
-                try:
-                    model = tf.keras.models.load_model(f"../models/model_{name}_epoch_{START_EPOCH}")
-                except OSError as e:
+                if START_EPOCH > 0:
+                    try:
+                        model = tf.keras.models.load_model(f"../models/model_{name}_epoch_{START_EPOCH}")
+                    except OSError as e:
+                        raise
+                else:
                     raise
-                
             if EPOCHS == 0:
                 print(f"model_{name}_epoch_{START_EPOCH}' exists, just evaluating model, skipping training")
             else:
