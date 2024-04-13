@@ -100,7 +100,10 @@ def train_models():
             except FileNotFoundError:
                 try:
                     with open(
-                        os.path.join(history_file[:-5], f"_epoch_{EPOCH}.json"), "r"
+                        os.path.join(
+                            history_file[:-5], f"_epoch_{EPOCHS+START_EPOCH}.json"
+                        ),
+                        "r",
                     ) as f:
                         existing_history = json.load(f)
                 except FileNotFoundError:
