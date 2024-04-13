@@ -60,7 +60,6 @@ def augmentation_backtranslation():
     """
     # Define file paths (replace with your actual paths)
     filepath_train = "datasets/ruddit/train.csv"
-    error
 
     os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "../data/api_key.json"
 
