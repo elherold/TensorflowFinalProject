@@ -19,9 +19,9 @@ def translate_text(target: str, text: str, client) -> dict:
     # API CALL
     result = client.translate(text, target_language=target)
 
-    #print("Text: {}".format(result["input"]))
-    #print("Translation: {}".format(result["translatedText"]))
-    #print("Detected source language: {}".format(result["detectedSourceLanguage"]))
+    # print("Text: {}".format(result["input"]))
+    # print("Translation: {}".format(result["translatedText"]))
+    # print("Detected source language: {}".format(result["detectedSourceLanguage"]))
 
     return result
 
@@ -37,11 +37,17 @@ def augment_text_translation(df):
         list, list: A list of back-translated comments and a list of translated comments.
     """
 
-    comments = df[df['toxic'] == 1]['comment_text'].tolist()
+    comments = df[df["toxic"] == 1]["comment_text"].tolist()
     translate_client = translate.Client()
-    translated_comments = [translate_text("fr", comment, translate_client)["translatedText"] for comment in comments]
+    translated_comments = [
+        translate_text("fr", comment, translate_client)["translatedText"]
+        for comment in comments
+    ]
     print("first translation finished")
-    back_translated = [translate_text("en", comment, translate_client)["translatedText"] for comment in translated_comments]
+    back_translated = [
+        translate_text("en", comment, translate_client)["translatedText"]
+        for comment in translated_comments
+    ]
 
     return back_translated, translated_comments
 
@@ -49,11 +55,11 @@ def augment_text_translation(df):
 def augmentation_backtranslation():
     """
     This function performs text augmentation using Googles translation API and saves the back-translated data.
-    Make sure to have a valid key stored in ../data/api_key.json. 
+    Make sure to have a valid key stored in ../data/api_key.json.
     You can create a key at https://cloud.google.com/translate/docs/setup.
     """
     # Define file paths (replace with your actual paths)
-    filepath_train = 'datasets/ruddit/train.csv'
+    filepath_train = "datasets/ruddit/train.csv"
     error
 
     os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "../data/api_key.json"
@@ -62,16 +68,22 @@ def augmentation_backtranslation():
     df_train = pd.read_csv(filepath_train)
 
     # Filter data
-    df_train_1 = df_train[df_train[['toxic', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity_hate']].sum(axis=1) > 0]
-    df_train_1_short = df_train_1[df_train_1['comment_text'].str.len() < 1200]
+    df_train_1 = df_train[
+        df_train[
+            ["toxic", "severe_toxic", "obscene", "threat", "insult", "identity_hate"]
+        ].sum(axis=1)
+        > 0
+    ]
+    df_train_1_short = df_train_1[df_train_1["comment_text"].str.len() < 1200]
     print("finished preloading")
     # Text Augmentation using translation
     df_todo = df_train_1_short.copy()  # Avoid modifying original DataFrame
     back_translated, translated_comments = augment_text_translation(df_todo)
 
     # Save back-translated data (assuming you have write permissions)
-    back_translated_df = pd.DataFrame({'comment_text': back_translated})
-    back_translated_df.to_csv('data/backtranslation_new.csv', index=False)
+    back_translated_df = pd.DataFrame({"comment_text": back_translated})
+    back_translated_df.to_csv("data/backtranslation_new.csv", index=False)
+
 
 if __name__ == "__main__":
     augmentation_backtranslation()
